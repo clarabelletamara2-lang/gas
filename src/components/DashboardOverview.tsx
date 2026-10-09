@@ -334,10 +334,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <p className="text-xs text-slate-600 italic leading-relaxed">
               &ldquo;{AUTHORS_INFO.bibleVerse.text}&rdquo;
             </p>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Karya Siswa Gloria 2</span>
-              <span className="text-blue-700 font-bold">Clarabelle 8C dkk</span>
-            </div>
           </div>
 
         </div>
