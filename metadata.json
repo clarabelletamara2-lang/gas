@@ -1,0 +1,6 @@
+{
+  "name": "Glowers Auto Suroboyoan - Dashboard Interaktif Siswa SMP",
+  "description": "Dashboard interaktif adaptasi budaya & bahasa Suroboyoan untuk siswa SMP Kristen Gloria 2 Pakuwon City lengkap dengan kamus gaul, game seru, dan tips pergaulan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

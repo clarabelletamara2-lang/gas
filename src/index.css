@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@layer utilities {
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    header, footer, nav, button {
+      display: none !important;
+    }
+  }
+}
+
