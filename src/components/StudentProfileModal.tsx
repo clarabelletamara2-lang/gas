@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Award, Sparkles, User, GraduationCap } from 'lucide-react';
 import { StudentProfile } from '../types';
+import { AVATAR_OPTIONS } from '../data/avatars';
 
 interface StudentProfileModalProps {
   isOpen: boolean;
@@ -10,7 +11,6 @@ interface StudentProfileModalProps {
   onLogout: () => void;
 }
 
-const AVATARS = ['🦁', '👦🏻', '👧🏻', '⚡', '🎮', '🌟', '🕶️', '🚀', '🏀', '🎨'];
 const GRADES = [
   // Kelas 7 (7A - 7G)
   '7A', '7B', '7C', '7D', '7E', '7F', '7G',
@@ -104,21 +104,26 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         {/* Edit Form */}
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Pilih Avatar Karakter
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {AVATARS.map((emoji) => (
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Pilih Karakter & Profesi Siswa
+              </label>
+              <span className="text-[11px] font-semibold text-blue-600">
+                {AVATAR_OPTIONS.length} Pilihan
+              </span>
+            </div>
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-2xl max-h-44 overflow-y-auto">
+              {(AVATAR_OPTIONS.includes(avatar) ? AVATAR_OPTIONS : [avatar, ...AVATAR_OPTIONS]).map((emoji) => (
                 <button
                   type="button"
                   key={emoji}
                   onClick={() => {
                     setAvatar(emoji);
                   }}
-                  className={`w-10 h-10 text-xl rounded-xl flex items-center justify-center transition-all ${
+                  className={`h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
                     avatar === emoji
-                      ? 'bg-blue-600 text-white ring-2 ring-blue-400 scale-110 shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-blue-600 text-white ring-2 ring-blue-400 scale-105 shadow-md shadow-blue-500/20'
+                      : 'bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   {emoji}
@@ -135,7 +140,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Andi, Clarabelle, Kevin"
+              placeholder="Contoh: Budi Santoso, Siti Putri"
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-medium"
               required
             />

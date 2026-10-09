@@ -3,6 +3,7 @@ import { X, Printer, Award, Sparkles } from 'lucide-react';
 import { StudentProfile } from '../types';
 import { AUTHORS_INFO } from '../data/suroboyoData';
 import { playSound } from '../utils/audio';
+import { GloriaLogo } from './GloriaLogo';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -70,8 +71,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-blue-600 rounded-tr-lg" />
 
           {/* School Header */}
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-2xl">🦁</span>
+          <div className="flex items-center justify-center gap-2.5 mb-1">
+            <GloriaLogo className="w-7 h-7 text-blue-800" />
             <span className="text-xs font-black uppercase tracking-widest text-blue-800">
               SMP KRISTEN GLORIA 2 PAKUWON CITY
             </span>

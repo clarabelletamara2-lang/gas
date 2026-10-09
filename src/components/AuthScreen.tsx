@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserPlus, 
   LogIn, 
@@ -8,9 +8,14 @@ import {
   ArrowRight,
   Cloud,
   CheckCircle2,
+  AlertCircle,
+  Loader2,
   Search
 } from 'lucide-react';
 import { StudentProfile } from '../types';
+import { GloriaLogo } from './GloriaLogo';
+import { AVATAR_OPTIONS, DEFAULT_AVATAR } from '../data/avatars';
+import { isUsernameTaken } from '../services/firebase';
 
 interface AuthScreenProps {
   savedAccounts: StudentProfile[];
@@ -18,8 +23,6 @@ interface AuthScreenProps {
   onRegister: (newAccount: { username: string; name: string; grade: string; avatar: string }) => Promise<void>;
   onDeleteAccount: (username: string) => void;
 }
-
-const AVATARS = ['🦁', '👦🏻', '👧🏻', '⚡', '🎮', '🌟', '🕶️', '🚀', '🏀', '🎨'];
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   savedAccounts,
@@ -39,9 +42,37 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [regUsername, setRegUsername] = useState('');
   const [name, setName] = useState('');
   const [grade, setGrade] = useState('8C');
-  const [avatar, setAvatar] = useState('🦁');
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Live username availability state
+  const [usernameAvailability, setUsernameAvailability] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+
+  // Debounced check for registration username uniqueness
+  useEffect(() => {
+    const clean = regUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (clean.length < 3) {
+      setUsernameAvailability('idle');
+      return;
+    }
+
+    setUsernameAvailability('checking');
+    const timer = setTimeout(async () => {
+      // 1. Check local saved accounts
+      const existsLocally = savedAccounts.some((acc) => acc.username.toLowerCase() === clean);
+      if (existsLocally) {
+        setUsernameAvailability('taken');
+        return;
+      }
+
+      // 2. Check cloud database
+      const taken = await isUsernameTaken(clean);
+      setUsernameAvailability(taken ? 'taken' : 'available');
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [regUsername, savedAccounts]);
 
   // Handle logging in by typing username (from another phone or this device)
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -70,8 +101,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     const cleanUsername = regUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
     const cleanName = name.trim();
 
-    if (!cleanUsername) {
-      setErrorMessage('Username harus diisi (hanya huruf, angka, underscore).');
+    if (!cleanUsername || cleanUsername.length < 3) {
+      setErrorMessage('Username harus diisi minimal 3 karakter (hanya huruf, angka, underscore).');
       return;
     }
     if (!cleanName) {
@@ -79,16 +110,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
+    // Strict uniqueness check: disallow duplicate username
+    const existsLocally = savedAccounts.some(
+      (acc) => acc.username.toLowerCase() === cleanUsername
+    );
+    if (existsLocally) {
+      setErrorMessage(`Username "@${cleanUsername}" sudah digunakan oleh akun lain di perangkat ini! Silakan pilih username yang berbeda.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      const taken = await isUsernameTaken(cleanUsername);
+      if (taken) {
+        setErrorMessage(`Username "@${cleanUsername}" sudah digunakan oleh siswa lain! Username tidak boleh sama, silakan pilih username unik lainnya.`);
+        setIsSubmitting(false);
+        return;
+      }
+
       await onRegister({
         username: cleanUsername,
         name: cleanName,
         grade,
         avatar,
       });
-    } catch (err) {
-      setErrorMessage('Gagal membuat akun, silakan coba lagi.');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Gagal membuat akun, silakan coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,8 +148,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         {/* Header School Branding */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-500 shadow-lg shadow-blue-500/25 p-0.5 mb-3">
-            <div className="w-full h-full bg-white rounded-[22px] flex items-center justify-center text-3xl">
-              🦁
+            <div className="w-full h-full bg-white rounded-[22px] flex items-center justify-center p-2 text-blue-700">
+              <GloriaLogo className="w-10 h-10 text-blue-700" />
             </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -113,7 +160,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </p>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold mt-2">
             <Cloud className="w-3.5 h-3.5 text-blue-600" />
-            <span>Cloud Sync Aktif • Akses dari HP Mana Pun</span>
+            <span>Cloud Sync Aktif • Akses Dimanapun, Kapanpun</span>
           </div>
         </div>
 
@@ -183,10 +230,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <h3 className="text-lg font-black text-slate-900 mb-0.5">
-                  Buka Akun dari HP / Komputer Mana Saja
+                  Akses Dimanapun, Kapanpun
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Pernah bikin akun di HP lain? Cukup ketik username kamu untuk memuat progress yang sudah tersimpan di cloud.
+                  Cukup ketik username kamu untuk memuat seluruh progres yang sudah tersimpan di cloud dari perangkat mana saja.
                 </p>
               </div>
 
@@ -200,7 +247,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     type="text"
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="contoh: clarabelle, budi8c, kevin"
+                    placeholder="contoh: glowerskeren, budi, areksuroboyo"
                     className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold"
                     required
                   />
@@ -255,19 +302,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
               {/* Avatar Picker */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Pilih Avatar Karakter
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {AVATARS.map((item) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    Pilih Karakter & Profesi Siswa
+                  </label>
+                  <span className="text-[11px] font-semibold text-blue-600">
+                    {AVATAR_OPTIONS.length} Pilihan
+                  </span>
+                </div>
+                <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-2xl max-h-44 overflow-y-auto">
+                  {AVATAR_OPTIONS.map((item) => (
                     <button
                       type="button"
                       key={item}
                       onClick={() => setAvatar(item)}
-                      className={`w-10 h-10 text-xl rounded-xl flex items-center justify-center transition-all ${
+                      className={`h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
                         avatar === item
-                          ? 'bg-blue-600 text-white ring-2 ring-blue-400 scale-110 shadow-md'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-blue-600 text-white ring-2 ring-blue-400 scale-105 shadow-md shadow-blue-500/20'
+                          : 'bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       {item}
@@ -279,7 +331,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {/* Username Input */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Username Unik (Ingat ini untuk buka di HP lain!)
+                  Username Unik (Ingat ini untuk akses dimanapun & kapanpun!)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">@</span>
@@ -287,11 +339,41 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     type="text"
                     value={regUsername}
                     onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="contoh: clarabelle, budi8c, kevin"
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-medium"
+                    placeholder="contoh: glowerskeren, budi, areksuroboyo"
+                    className={`w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-50 border text-slate-900 placeholder-slate-400 focus:outline-none text-sm font-medium transition-all ${
+                      usernameAvailability === 'taken'
+                        ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-100'
+                        : usernameAvailability === 'available'
+                        ? 'border-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'
+                        : 'border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                    }`}
                     required
                   />
                 </div>
+
+                {/* Live Availability Status */}
+                {regUsername.trim().length >= 3 && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs font-bold">
+                    {usernameAvailability === 'checking' && (
+                      <span className="text-slate-500 flex items-center gap-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                        Mengecek ketersediaan username...
+                      </span>
+                    )}
+                    {usernameAvailability === 'available' && (
+                      <span className="text-emerald-700 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Username @{regUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')} tersedia!
+                      </span>
+                    )}
+                    {usernameAvailability === 'taken' && (
+                      <span className="text-rose-700 flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                        Username @{regUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')} sudah dipakai, pilih username lain!
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Full Name Input */}
@@ -303,7 +385,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Contoh: Clarabelle Tamara, Budi Santoso"
+                  placeholder="Contoh: Budi Santoso, Siti Putri"
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-medium"
                   required
                 />
@@ -358,8 +440,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all"
+                disabled={isSubmitting || usernameAvailability === 'taken'}
+                className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-black text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <span>Menyimpan ke Cloud...</span>

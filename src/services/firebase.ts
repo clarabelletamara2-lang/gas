@@ -28,6 +28,39 @@ export const db = firebaseConfigData.firestoreDatabaseId
   ? getFirestore(app, firebaseConfigData.firestoreDatabaseId)
   : getFirestore(app);
 
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    operationType,
+    path,
+    authInfo: {
+      userId: null,
+      email: null,
+    },
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  return errInfo;
+}
+
 // Test connection on boot
 export async function testConnection() {
   try {
@@ -40,7 +73,41 @@ export async function testConnection() {
 }
 testConnection();
 
-const STORAGE_ACCOUNTS_KEY = 'glowers_student_accounts_v1';
+export const STORAGE_ACCOUNTS_KEY = 'glowers_student_accounts_v1';
+
+/**
+ * Checks whether a username is already taken by another student in Cloud Firestore or local cache.
+ */
+export async function isUsernameTaken(username: string): Promise<boolean> {
+  const cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
+  if (!cleanUsername) return false;
+
+  // 1. Check local cache
+  try {
+    const local = localStorage.getItem(STORAGE_ACCOUNTS_KEY);
+    if (local) {
+      const accounts = JSON.parse(local);
+      if (accounts[cleanUsername]) {
+        return true;
+      }
+    }
+  } catch (e) {
+    console.debug('Error checking local accounts cache', e);
+  }
+
+  // 2. Check Cloud Firestore
+  try {
+    const docRef = doc(db, 'students', cleanUsername);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return true;
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, `students/${cleanUsername}`);
+  }
+
+  return false;
+}
 
 // Save student account to Firestore cloud (and cache locally)
 export async function saveAccountToCloud(profile: StudentProfile): Promise<boolean> {
@@ -57,6 +124,7 @@ export async function saveAccountToCloud(profile: StudentProfile): Promise<boole
     }, { merge: true });
     cloudSuccess = true;
   } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `students/${cleanUsername}`);
     console.warn('Gagal sync ke cloud Firebase, disimpan di cache lokal:', err);
   }
 

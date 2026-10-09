@@ -37,6 +37,14 @@
           "type": "array",
           "description": "Daftar ID kosakata yang sudah dihafal siswa."
         },
+        "completedQuests": {
+          "type": "array",
+          "description": "Daftar ID skenario simulasi dialog yang telah diselesaikan siswa."
+        },
+        "badges": {
+          "type": "array",
+          "description": "Daftar lencana prestasi siswa."
+        },
         "quizHighScore": {
           "type": "number",
           "description": "Skor tertinggi di game Tebak Slang."
@@ -44,6 +52,10 @@
         "createdAt": {
           "type": "string",
           "description": "Waktu pembuatan akun ISO format."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Waktu pembaruan akun terakhir ISO format."
         },
         "lastLoginDate": {
           "type": "string",

@@ -17,6 +17,7 @@ import { AuthScreen } from './components/AuthScreen';
 import { StudentProfile } from './types';
 import { AUTHORS_INFO } from './data/suroboyoData';
 import { saveAccountToCloud, fetchAccountFromCloud, subscribeToAccount } from './services/firebase';
+import { GloriaLogo } from './components/GloriaLogo';
 import { Sparkles, ArrowRightLeft } from 'lucide-react';
 
 const STORAGE_ACCOUNTS_KEY = 'glowers_student_accounts_v1';
@@ -155,10 +156,23 @@ export default function App() {
     grade: string;
     avatar: string;
   }) => {
+    const cleanUsername = newAccountData.username.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
+
+    // 1. Verify uniqueness: check if username already taken locally
+    if (accounts[cleanUsername]) {
+      throw new Error(`Username "@${cleanUsername}" sudah digunakan di perangkat ini! Silakan pakai username unik lain.`);
+    }
+
+    // 2. Verify uniqueness: check if username already taken in Cloud Firestore
+    const cloudAccount = await fetchAccountFromCloud(cleanUsername);
+    if (cloudAccount) {
+      throw new Error(`Username "@${cleanUsername}" sudah terdaftar oleh siswa lain! Username tidak boleh sama.`);
+    }
+
     const today = new Date().toISOString().split('T')[0];
     const freshProfile: StudentProfile = {
-      username: newAccountData.username.toLowerCase(),
-      name: newAccountData.name,
+      username: cleanUsername,
+      name: newAccountData.name.trim(),
       grade: newAccountData.grade,
       avatar: newAccountData.avatar,
       xp: 0,
@@ -442,7 +456,7 @@ export default function App() {
       <footer className="border-t border-slate-200 bg-white py-8 text-xs text-slate-500 shadow-inner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🦁</span>
+            <GloriaLogo className="w-8 h-8 text-blue-700" />
             <div>
               <p className="font-extrabold text-slate-800">
                 {AUTHORS_INFO.title}

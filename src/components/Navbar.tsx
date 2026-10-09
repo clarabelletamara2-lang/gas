@@ -14,6 +14,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { StudentProfile } from '../types';
+import { GloriaLogo } from './GloriaLogo';
 
 interface NavbarProps {
   profile: StudentProfile;
@@ -65,8 +66,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 cursor-pointer group select-none"
           >
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-500 p-0.5 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
-                <span className="text-xl sm:text-2xl">🦁</span>
+              <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center p-1.5 text-blue-700">
+                <GloriaLogo className="w-7 h-7 sm:w-8 sm:h-8 text-blue-700" />
               </div>
             </div>
             <div>

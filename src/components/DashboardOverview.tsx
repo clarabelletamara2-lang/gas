@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 import { VOCABULARY_LIST, AUTHORS_INFO } from '../data/suroboyoData';
+import { GloriaLogo } from './GloriaLogo';
 
 interface DashboardOverviewProps {
   profile: StudentProfile;
@@ -42,8 +43,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-black uppercase tracking-wider">
-                🦁 Survival Kit SMP Gloria 2
+              <span className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-black uppercase tracking-wider inline-flex items-center gap-2 shadow-xs">
+                <GloriaLogo className="w-5 h-5" variant="white" />
+                <span>Survival Kit SMP Gloria 2</span>
               </span>
               <span className="text-xs text-blue-100 font-medium">Pakuwon City</span>
             </div>

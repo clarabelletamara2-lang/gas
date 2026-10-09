@@ -5,6 +5,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { CULTURE_TIPS, ETHICS_RULES, AUTHORS_INFO } from '../data/suroboyoData';
+import { GloriaLogo } from './GloriaLogo';
 
 export const TipsAndEthics: React.FC = () => {
   return (
@@ -113,8 +114,8 @@ export const TipsAndEthics: React.FC = () => {
       {/* Author Credits Box */}
       <div className="p-6 rounded-3xl bg-white border border-blue-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-2xl shadow-sm text-white">
-            🦁
+          <div className="w-12 h-12 rounded-2xl bg-white border border-blue-200 flex items-center justify-center p-2 shadow-sm text-blue-700">
+            <GloriaLogo className="w-8 h-8 text-blue-700" />
           </div>
           <div>
             <h4 className="text-sm font-black text-slate-900">{AUTHORS_INFO.school}</h4>

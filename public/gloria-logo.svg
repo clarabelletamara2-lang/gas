@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%" fill="none">
+  <!-- Outer Globe Ring -->
+  <circle cx="100" cy="100" r="78" stroke="#00509E" stroke-width="7" />
+
+  <!-- Equator Line -->
+  <line x1="22" y1="100" x2="178" y2="100" stroke="#00509E" stroke-width="2.8" stroke-linecap="round" />
+
+  <!-- Central Meridian Line -->
+  <line x1="100" y1="22" x2="100" y2="178" stroke="#00509E" stroke-width="2.8" stroke-linecap="round" />
+
+  <!-- Upper Latitude Curve -->
+  <path d="M 33 60 C 65 80, 135 80, 167 60" stroke="#00509E" stroke-width="2.5" fill="none" />
+
+  <!-- Lower Latitude Curves (behind book) -->
+  <path d="M 35 138 C 55 125, 75 120, 85 118" stroke="#00509E" stroke-width="2.2" fill="none" />
+  <path d="M 165 138 C 145 125, 125 120, 115 118" stroke="#00509E" stroke-width="2.2" fill="none" />
+
+  <!-- Open Bible (Book) -->
+  <g id="open-bible">
+    <!-- Left Page Background (white) and Outline -->
+    <path
+      d="M 100 112 C 85 106, 70 108, 62 113 L 62 155 C 72 150, 88 149, 100 160 Z"
+      fill="#FFFFFF"
+      stroke="#00509E"
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+    <!-- Left Page Under-layers (sheets) -->
+    <path d="M 66 158 C 76 153, 90 152, 100 163" stroke="#00509E" stroke-width="1.8" fill="none" />
+
+    <!-- Right Page Background (white) and Outline -->
+    <path
+      d="M 100 112 C 115 106, 130 108, 138 113 L 138 155 C 128 150, 112 149, 100 160 Z"
+      fill="#FFFFFF"
+      stroke="#00509E"
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+    <!-- Right Page Under-layers (sheets) -->
+    <path d="M 134 158 C 124 153, 110 152, 100 163" stroke="#00509E" stroke-width="1.8" fill="none" />
+
+    <!-- Book Center Fold Line -->
+    <line x1="100" y1="112" x2="100" y2="160" stroke="#00509E" stroke-width="2" />
+  </g>
+
+  <!-- Latin Cross -->
+  <g id="christian-cross">
+    <!-- Cross cutout mask in Bible area for crisp overlapping -->
+    <rect x="111" y="128" width="14" height="24" fill="#FFFFFF" />
+
+    <!-- Cross Horizontal Bar -->
+    <rect x="85" y="70" width="64" height="7.5" fill="#00509E" rx="0.5" />
+
+    <!-- Cross Vertical Shaft (protrudes beyond the outer circle at top and bottom) -->
+    <rect x="114" y="3" width="7.5" height="194" fill="#00509E" rx="0.5" />
+  </g>
+</svg>

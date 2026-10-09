@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RotateCcw, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSound } from '../utils/audio';
+import { GloriaLogo } from './GloriaLogo';
 
 interface MemoryCard {
   id: string;
@@ -198,7 +199,7 @@ export const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({ onAddXp }) => 
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center text-slate-400">
-                  <span className="text-xl sm:text-2xl mb-1">🦁</span>
+                  <GloriaLogo className="w-6 h-6 text-blue-600/70 mb-1" />
                   <span className="text-[10px] font-bold text-slate-500">Gloria 2</span>
                 </div>
               )}
