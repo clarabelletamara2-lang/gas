@@ -365,25 +365,8 @@ export default function App() {
       )}
 
       {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
         
-        {/* Quick sub-navigation for translator tool */}
-        <div className="flex items-center justify-end gap-2 mb-4">
-          <button
-            onClick={() => {
-              setCurrentTab(currentTab === 'translator' ? 'dashboard' : 'translator');
-            }}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
-              currentTab === 'translator'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
-            }`}
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5 text-blue-600" />
-            <span>{currentTab === 'translator' ? 'Kembali ke Beranda' : 'Buka Translator Gaul'}</span>
-          </button>
-        </div>
-
         {/* Dynamic Tab Views */}
         {currentTab === 'dashboard' && (
           <DashboardOverview
