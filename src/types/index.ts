@@ -11,15 +11,19 @@ export interface VocabItem {
 }
 
 export interface StudentProfile {
+  username: string;
   name: string;
   grade: string;
   avatar: string;
   xp: number;
   level: number;
   streak: number;
+  masteredWordIds: string[];
   completedQuests: string[];
   badges: string[];
   quizHighScore: number;
+  createdAt: string;
+  lastLoginDate?: string;
 }
 
 export interface QuizQuestion {

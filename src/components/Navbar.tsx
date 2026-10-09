@@ -7,7 +7,8 @@ import {
   Compass, 
   MessageSquareShare, 
   HeartHandshake,
-  Sparkles 
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 
@@ -17,6 +18,7 @@ interface NavbarProps {
   setCurrentTab: (tab: string) => void;
   onOpenProfile: () => void;
   onOpenCertificate: () => void;
+  onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTab,
   onOpenProfile,
   onOpenCertificate,
+  onLogout,
 }) => {
   const navTabs = [
     { id: 'dashboard', label: 'Beranda', icon: Compass },
@@ -130,6 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenProfile}
               className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left shadow-sm"
+              title="Edit Profil"
             >
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg shadow-inner text-white">
                 {profile.avatar}
@@ -146,6 +150,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="font-semibold text-blue-700">Lv.{profile.level} {getLevelTitle(profile.level)}</span>
                 </div>
               </div>
+            </button>
+
+            {/* Switch Account / Logout Button */}
+            <button
+              onClick={onLogout}
+              title={`Ganti Akun (Sedang login: @${profile.username})`}
+              className="p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 shadow-sm transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
 

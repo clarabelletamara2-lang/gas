@@ -7,6 +7,7 @@ interface StudentProfileModalProps {
   onClose: () => void;
   profile: StudentProfile;
   onSaveProfile: (updated: Partial<StudentProfile>) => void;
+  onLogout: () => void;
 }
 
 const AVATARS = ['🦁', '👦🏻', '👧🏻', '⚡', '🎮', '🌟', '🕶️', '🚀', '🏀', '🎨'];
@@ -24,6 +25,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   onClose,
   profile,
   onSaveProfile,
+  onLogout,
 }) => {
   const [name, setName] = useState(profile.name);
   const [grade, setGrade] = useState(profile.grade);
@@ -215,6 +217,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-sm font-extrabold shadow-md shadow-blue-500/20 transition-all"
             >
               Simpan Profil
+            </button>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="text-slate-400 font-mono font-medium">Akun: @{profile.username}</span>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onLogout();
+              }}
+              className="text-rose-600 font-bold hover:underline"
+            >
+              Ganti Akun / Keluar
             </button>
           </div>
         </form>

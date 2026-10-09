@@ -13,21 +13,13 @@ import { TranslatorTool } from './components/TranslatorTool';
 import { TipsAndEthics } from './components/TipsAndEthics';
 import { StudentProfileModal } from './components/StudentProfileModal';
 import { CertificateModal } from './components/CertificateModal';
+import { AuthScreen } from './components/AuthScreen';
 import { StudentProfile } from './types';
 import { AUTHORS_INFO } from './data/suroboyoData';
 import { Sparkles, ArrowRightLeft } from 'lucide-react';
 
-const DEFAULT_PROFILE: StudentProfile = {
-  name: 'Andi Siswa Mutasi',
-  grade: '8C',
-  avatar: '🦁',
-  xp: 120,
-  level: 2,
-  streak: 3,
-  completedQuests: ['first_word'],
-  badges: ['first_word'],
-  quizHighScore: 720,
-};
+const STORAGE_ACCOUNTS_KEY = 'glowers_student_accounts_v1';
+const STORAGE_CURRENT_USER_KEY = 'glowers_active_username_v1';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
@@ -35,87 +27,203 @@ export default function App() {
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [xpToast, setXpToast] = useState<{ amount: number; reason: string } | null>(null);
 
-  // Load profile from localStorage
-  const [profile, setProfile] = useState<StudentProfile>(() => {
+  // Load accounts map: { [username: string]: StudentProfile }
+  const [accounts, setAccounts] = useState<Record<string, StudentProfile>>(() => {
     try {
-      const saved = localStorage.getItem('glowers_student_profile');
+      const saved = localStorage.getItem(STORAGE_ACCOUNTS_KEY);
       if (saved) return JSON.parse(saved);
     } catch (e) {
-      console.debug('Error reading local profile', e);
+      console.debug('Error reading local accounts', e);
     }
-    return DEFAULT_PROFILE;
+    return {};
   });
 
-  // Load mastered words from localStorage
-  const [masteredWordIds, setMasteredWordIds] = useState<string[]>(() => {
+  // Load currently logged in username
+  const [activeUsername, setActiveUsername] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem('glowers_mastered_words');
-      if (saved) return JSON.parse(saved);
+      return localStorage.getItem(STORAGE_CURRENT_USER_KEY);
     } catch (e) {
-      console.debug('Error reading local mastered words', e);
+      console.debug('Error reading active user', e);
     }
-    return ['1', '6', '11']; // Iyo, Mari, Rek by default
+    return null;
   });
 
-  // Sync profile to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('glowers_student_profile', JSON.stringify(profile));
-    } catch (e) {
-      console.debug('Error saving profile', e);
-    }
-  }, [profile]);
+  // Current active student profile
+  const profile = activeUsername && accounts[activeUsername] ? accounts[activeUsername] : null;
 
-  // Sync mastered words to localStorage
+  // Persist accounts map whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem('glowers_mastered_words', JSON.stringify(masteredWordIds));
+      localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
     } catch (e) {
-      console.debug('Error saving mastered words', e);
+      console.debug('Error saving accounts', e);
     }
-  }, [masteredWordIds]);
+  }, [accounts]);
+
+  // Persist active username whenever it changes
+  useEffect(() => {
+    try {
+      if (activeUsername) {
+        localStorage.setItem(STORAGE_CURRENT_USER_KEY, activeUsername);
+      } else {
+        localStorage.removeItem(STORAGE_CURRENT_USER_KEY);
+      }
+    } catch (e) {
+      console.debug('Error saving active user', e);
+    }
+  }, [activeUsername]);
+
+  // Handle fresh registration (starts at 0 everything)
+  const handleRegister = (newAccountData: {
+    username: string;
+    name: string;
+    grade: string;
+    avatar: string;
+  }) => {
+    const today = new Date().toISOString().split('T')[0];
+    const freshProfile: StudentProfile = {
+      username: newAccountData.username,
+      name: newAccountData.name,
+      grade: newAccountData.grade,
+      avatar: newAccountData.avatar,
+      xp: 0,
+      level: 1,
+      streak: 0,
+      masteredWordIds: [],
+      completedQuests: [],
+      badges: [],
+      quizHighScore: 0,
+      createdAt: new Date().toISOString(),
+      lastLoginDate: today,
+    };
+
+    setAccounts((prev) => ({
+      ...prev,
+      [freshProfile.username]: freshProfile,
+    }));
+    setActiveUsername(freshProfile.username);
+    setCurrentTab('dashboard');
+  };
+
+  // Handle login to existing saved account
+  const handleLogin = (username: string) => {
+    if (accounts[username]) {
+      setActiveUsername(username);
+      setCurrentTab('dashboard');
+    }
+  };
+
+  // Handle delete account from storage
+  const handleDeleteAccount = (username: string) => {
+    setAccounts((prev) => {
+      const copy = { ...prev };
+      delete copy[username];
+      return copy;
+    });
+    if (activeUsername === username) {
+      setActiveUsername(null);
+    }
+  };
+
+  // Handle logout / switch account
+  const handleLogout = () => {
+    setActiveUsername(null);
+    setIsProfileOpen(false);
+  };
 
   const handleAddXp = (amount: number, reason: string) => {
+    if (!profile) return;
+
     setXpToast({ amount, reason });
     setTimeout(() => setXpToast(null), 3000);
 
-    setProfile((prev) => {
-      const newXp = prev.xp + amount;
-      const newLevel = Math.floor(newXp / 100) + 1;
+    const newXp = profile.xp + amount;
+    const newLevel = Math.floor(newXp / 100) + 1;
 
+    setAccounts((prev) => {
+      const current = prev[profile.username];
+      if (!current) return prev;
       return {
         ...prev,
-        xp: newXp,
-        level: newLevel,
+        [profile.username]: {
+          ...current,
+          xp: newXp,
+          level: newLevel,
+        },
       };
     });
   };
 
   const handleToggleMastered = (id: string) => {
-    setMasteredWordIds((prev) => {
-      const exists = prev.includes(id);
-      if (exists) {
-        return prev.filter((item) => item !== id);
-      } else {
-        handleAddXp(15, 'Menguasai kosakata baru Suroboyoan');
-        return [...prev, id];
-      }
+    if (!profile) return;
+
+    const currentMastered = profile.masteredWordIds || [];
+    const exists = currentMastered.includes(id);
+
+    let updatedMastered: string[];
+    if (exists) {
+      updatedMastered = currentMastered.filter((item) => item !== id);
+    } else {
+      updatedMastered = [...currentMastered, id];
+      handleAddXp(15, 'Menguasai kosakata baru Suroboyoan');
+    }
+
+    setAccounts((prev) => {
+      const current = prev[profile.username];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [profile.username]: {
+          ...current,
+          masteredWordIds: updatedMastered,
+        },
+      };
     });
   };
 
   const handleSaveProfile = (updated: Partial<StudentProfile>) => {
-    setProfile((prev) => ({
-      ...prev,
-      ...updated,
-    }));
+    if (!profile) return;
+    setAccounts((prev) => {
+      const current = prev[profile.username];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [profile.username]: {
+          ...current,
+          ...updated,
+        },
+      };
+    });
   };
 
   const handleUpdateHighScore = (score: number) => {
-    setProfile((prev) => ({
-      ...prev,
-      quizHighScore: Math.max(prev.quizHighScore || 0, score),
-    }));
+    if (!profile) return;
+    setAccounts((prev) => {
+      const current = prev[profile.username];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [profile.username]: {
+          ...current,
+          quizHighScore: Math.max(current.quizHighScore || 0, score),
+        },
+      };
+    });
   };
+
+  // IF NO ACTIVE ACCOUNT, SHOW AUTH SCREEN IMMEDIATELY
+  if (!profile) {
+    return (
+      <AuthScreen
+        savedAccounts={Object.values(accounts)}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onDeleteAccount={handleDeleteAccount}
+      />
+    );
+  }
+
+  const masteredWordIds = profile.masteredWordIds || [];
 
   return (
     <div className="min-h-screen bg-slate-50/80 text-slate-800 flex flex-col selection:bg-blue-600 selection:text-white">
@@ -126,6 +234,7 @@ export default function App() {
         setCurrentTab={setCurrentTab}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenCertificate={() => setIsCertificateOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Floating XP Toast Notification */}
@@ -214,6 +323,7 @@ export default function App() {
         onClose={() => setIsProfileOpen(false)}
         profile={profile}
         onSaveProfile={handleSaveProfile}
+        onLogout={handleLogout}
       />
 
       {/* Certificate / Badge Card Modal */}
@@ -233,7 +343,7 @@ export default function App() {
                 {AUTHORS_INFO.title}
               </p>
               <p className="text-[11px] text-slate-400">
-                {AUTHORS_INFO.school}
+                {AUTHORS_INFO.school} • Logged in: <span className="font-mono text-blue-700 font-bold">@{profile.username}</span>
               </p>
             </div>
           </div>
