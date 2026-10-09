@@ -8,7 +8,10 @@ import {
   MessageSquareShare, 
   HeartHandshake,
   Sparkles,
-  LogOut
+  LogOut,
+  Cloud,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 
@@ -19,6 +22,7 @@ interface NavbarProps {
   onOpenProfile: () => void;
   onOpenCertificate: () => void;
   onLogout: () => void;
+  cloudStatus?: 'synced' | 'saving' | 'offline';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenCertificate,
   onLogout,
+  cloudStatus = 'synced',
 }) => {
   const navTabs = [
     { id: 'dashboard', label: 'Beranda', icon: Compass },
@@ -110,6 +115,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Widgets */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Cloud Auto-Save Status Badge */}
+            <div 
+              title="Progres otomatis tersimpan secara real-time ke Cloud Database Firebase!"
+              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${
+                cloudStatus === 'saving'
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : cloudStatus === 'offline'
+                  ? 'bg-slate-100 border-slate-200 text-slate-600'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              }`}
+            >
+              {cloudStatus === 'saving' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : cloudStatus === 'offline' ? (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Lokal</span>
+                </>
+              ) : (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="flex items-center gap-1">
+                    Auto-Save <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  </span>
+                </>
+              )}
+            </div>
+
             {/* Daily Streak */}
             <div 
               title={`${profile.streak} Hari Berturut-turut Belajar Suroboyoan!`}
@@ -135,8 +171,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left shadow-sm"
               title="Edit Profil"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg shadow-inner text-white">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-lg shadow-inner text-white">
                 {profile.avatar}
+                <span 
+                  title={cloudStatus === 'saving' ? 'Menyimpan ke Cloud...' : 'Progres otomatis tersimpan ke Cloud'}
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-white rounded-full ${
+                    cloudStatus === 'saving' ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+                  }`}
+                />
               </div>
               <div className="hidden sm:block">
                 <div className="flex items-center gap-1.5">

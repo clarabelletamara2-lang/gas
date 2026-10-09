@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Siswa dapat membaca dan menyimpan progres akun mereka dari HP/perangkat mana pun
+    match /students/{username} {
+      allow read: if true;
+      allow create, update: if request.resource.data.username == username
+                            && request.resource.data.name is string
+                            && request.resource.data.grade is string;
+      allow delete: if false;
+    }
+  }
+}

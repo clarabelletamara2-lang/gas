@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "StudentAccount": {
+      "title": "StudentAccount",
+      "description": "Akun siswa SMP Kristen Gloria 2 untuk menyimpan data adaptasi Suroboyoan secara online antar-perangkat.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Username unik pengenal siswa."
+        },
+        "name": {
+          "type": "string",
+          "description": "Nama panggilan atau lengkap siswa."
+        },
+        "grade": {
+          "type": "string",
+          "description": "Kelas siswa (misal: 7A, 8C, 9G)."
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Emoji avatar karakter siswa."
+        },
+        "xp": {
+          "type": "number",
+          "description": "Total poin pengalaman belajar."
+        },
+        "level": {
+          "type": "number",
+          "description": "Level adaptasi siswa (1-5)."
+        },
+        "streak": {
+          "type": "number",
+          "description": "Jumlah hari berturut-turut belajar."
+        },
+        "masteredWordIds": {
+          "type": "array",
+          "description": "Daftar ID kosakata yang sudah dihafal siswa."
+        },
+        "quizHighScore": {
+          "type": "number",
+          "description": "Skor tertinggi di game Tebak Slang."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Waktu pembuatan akun ISO format."
+        },
+        "lastLoginDate": {
+          "type": "string",
+          "description": "Tanggal terakhir masuk akun."
+        }
+      },
+      "required": ["username", "name", "grade", "avatar", "xp", "level"]
+    }
+  },
+  "firestore": {
+    "/students/{username}": {
+      "schema": {
+        "$ref": "#/entities/StudentAccount"
+      },
+      "description": "Koleksi data akun dan progres siswa yang tersinkronisasi di semua HP / perangkat."
+    }
+  }
+}

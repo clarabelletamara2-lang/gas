@@ -16,6 +16,7 @@ import { CertificateModal } from './components/CertificateModal';
 import { AuthScreen } from './components/AuthScreen';
 import { StudentProfile } from './types';
 import { AUTHORS_INFO } from './data/suroboyoData';
+import { saveAccountToCloud, fetchAccountFromCloud, subscribeToAccount } from './services/firebase';
 import { Sparkles, ArrowRightLeft } from 'lucide-react';
 
 const STORAGE_ACCOUNTS_KEY = 'glowers_student_accounts_v1';
@@ -26,8 +27,9 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [xpToast, setXpToast] = useState<{ amount: number; reason: string } | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'saving' | 'offline'>('synced');
 
-  // Load accounts map: { [username: string]: StudentProfile }
+  // Local device accounts cache
   const [accounts, setAccounts] = useState<Record<string, StudentProfile>>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_ACCOUNTS_KEY);
@@ -38,7 +40,7 @@ export default function App() {
     return {};
   });
 
-  // Load currently logged in username
+  // Currently logged in username on this device
   const [activeUsername, setActiveUsername] = useState<string | null>(() => {
     try {
       return localStorage.getItem(STORAGE_CURRENT_USER_KEY);
@@ -51,16 +53,16 @@ export default function App() {
   // Current active student profile
   const profile = activeUsername && accounts[activeUsername] ? accounts[activeUsername] : null;
 
-  // Persist accounts map whenever it changes
+  // Persist local cache
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
     } catch (e) {
-      console.debug('Error saving accounts', e);
+      console.debug('Error saving local accounts', e);
     }
   }, [accounts]);
 
-  // Persist active username whenever it changes
+  // Persist active username
   useEffect(() => {
     try {
       if (activeUsername) {
@@ -73,8 +75,81 @@ export default function App() {
     }
   }, [activeUsername]);
 
-  // Handle fresh registration (starts at 0 everything)
-  const handleRegister = (newAccountData: {
+  // Auto-sync with Cloud Firestore in real time whenever active user is present
+  useEffect(() => {
+    if (!activeUsername) return;
+
+    // 1. Initial background fetch to pull updates from other devices
+    fetchAccountFromCloud(activeUsername).then((cloudProfile) => {
+      if (cloudProfile) {
+        setAccounts((prev) => ({
+          ...prev,
+          [cloudProfile.username]: cloudProfile,
+        }));
+      }
+    });
+
+    // 2. Real-time onSnapshot listener for instant cross-device updates
+    const unsubscribe = subscribeToAccount(activeUsername, (updatedFromCloud) => {
+      setAccounts((prev) => ({
+        ...prev,
+        [updatedFromCloud.username]: updatedFromCloud,
+      }));
+      setSyncStatus('synced');
+    });
+
+    // 3. Sync on window focus (e.g. when switching back from another tab/app)
+    const handleFocus = () => {
+      fetchAccountFromCloud(activeUsername).then((cloudProfile) => {
+        if (cloudProfile) {
+          setAccounts((prev) => ({
+            ...prev,
+            [cloudProfile.username]: cloudProfile,
+          }));
+        }
+      });
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [activeUsername]);
+
+  // Daily streak check on visit
+  useEffect(() => {
+    if (!profile) return;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (profile.lastLoginDate !== today) {
+      const lastDate = profile.lastLoginDate ? new Date(profile.lastLoginDate) : null;
+      const todayDate = new Date(today);
+      let newStreak = profile.streak || 1;
+
+      if (lastDate) {
+        const diffDays = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
+        if (diffDays === 1) {
+          newStreak += 1;
+        } else if (diffDays > 1) {
+          newStreak = 1;
+        }
+      } else {
+        newStreak = 1;
+      }
+
+      const updatedWithStreak: StudentProfile = {
+        ...profile,
+        streak: newStreak,
+        lastLoginDate: today,
+      };
+
+      updateProfileAndSync(updatedWithStreak);
+    }
+  }, [profile?.username, profile?.lastLoginDate]);
+
+  // Handle fresh registration (starts at 0 everything, saves to Cloud Firestore)
+  const handleRegister = async (newAccountData: {
     username: string;
     name: string;
     grade: string;
@@ -82,13 +157,13 @@ export default function App() {
   }) => {
     const today = new Date().toISOString().split('T')[0];
     const freshProfile: StudentProfile = {
-      username: newAccountData.username,
+      username: newAccountData.username.toLowerCase(),
       name: newAccountData.name,
       grade: newAccountData.grade,
       avatar: newAccountData.avatar,
       xp: 0,
       level: 1,
-      streak: 0,
+      streak: 1,
       masteredWordIds: [],
       completedQuests: [],
       badges: [],
@@ -97,23 +172,53 @@ export default function App() {
       lastLoginDate: today,
     };
 
+    // 1. Save to local device
     setAccounts((prev) => ({
       ...prev,
       [freshProfile.username]: freshProfile,
     }));
     setActiveUsername(freshProfile.username);
     setCurrentTab('dashboard');
+
+    // 2. Sync to Cloud Firestore so other phones can access it
+    setSyncStatus('saving');
+    const saved = await saveAccountToCloud(freshProfile);
+    setSyncStatus(saved ? 'synced' : 'offline');
   };
 
-  // Handle login to existing saved account
-  const handleLogin = (username: string) => {
-    if (accounts[username]) {
-      setActiveUsername(username);
+  // Handle login by username (checks Cloud Firestore, downloads to device)
+  const handleLogin = async (username: string): Promise<boolean> => {
+    const clean = username.toLowerCase().trim();
+
+    // 1. First check cloud Firestore
+    const cloudAccount = await fetchAccountFromCloud(clean);
+    if (cloudAccount) {
+      setAccounts((prev) => ({
+        ...prev,
+        [cloudAccount.username]: cloudAccount,
+      }));
+      setActiveUsername(cloudAccount.username);
       setCurrentTab('dashboard');
+      setSyncStatus('synced');
+      return true;
     }
+
+    // 2. Check local device cache
+    if (accounts[clean]) {
+      setActiveUsername(clean);
+      setCurrentTab('dashboard');
+      // Background sync to cloud
+      setSyncStatus('saving');
+      saveAccountToCloud(accounts[clean]).then((ok) => {
+        setSyncStatus(ok ? 'synced' : 'offline');
+      });
+      return true;
+    }
+
+    return false;
   };
 
-  // Handle delete account from storage
+  // Handle delete account from this device's quick list
   const handleDeleteAccount = (username: string) => {
     setAccounts((prev) => {
       const copy = { ...prev };
@@ -125,10 +230,22 @@ export default function App() {
     }
   };
 
-  // Handle logout / switch account
+  // Handle logout
   const handleLogout = () => {
     setActiveUsername(null);
     setIsProfileOpen(false);
+  };
+
+  // Save changes to both state & Cloud Firestore automatically
+  const updateProfileAndSync = async (updated: StudentProfile) => {
+    setAccounts((prev) => ({
+      ...prev,
+      [updated.username]: updated,
+    }));
+    // Auto-save to Cloud Firestore
+    setSyncStatus('saving');
+    const cloudSaved = await saveAccountToCloud(updated);
+    setSyncStatus(cloudSaved ? 'synced' : 'offline');
   };
 
   const handleAddXp = (amount: number, reason: string) => {
@@ -140,18 +257,13 @@ export default function App() {
     const newXp = profile.xp + amount;
     const newLevel = Math.floor(newXp / 100) + 1;
 
-    setAccounts((prev) => {
-      const current = prev[profile.username];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [profile.username]: {
-          ...current,
-          xp: newXp,
-          level: newLevel,
-        },
-      };
-    });
+    const updated: StudentProfile = {
+      ...profile,
+      xp: newXp,
+      level: newLevel,
+    };
+
+    updateProfileAndSync(updated);
   };
 
   const handleToggleMastered = (id: string) => {
@@ -161,57 +273,49 @@ export default function App() {
     const exists = currentMastered.includes(id);
 
     let updatedMastered: string[];
+    let earnedXp = 0;
+
     if (exists) {
       updatedMastered = currentMastered.filter((item) => item !== id);
     } else {
       updatedMastered = [...currentMastered, id];
-      handleAddXp(15, 'Menguasai kosakata baru Suroboyoan');
+      earnedXp = 15;
+      setXpToast({ amount: 15, reason: 'Menguasai kosakata baru Suroboyoan' });
+      setTimeout(() => setXpToast(null), 3000);
     }
 
-    setAccounts((prev) => {
-      const current = prev[profile.username];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [profile.username]: {
-          ...current,
-          masteredWordIds: updatedMastered,
-        },
-      };
-    });
+    const newXp = profile.xp + earnedXp;
+    const newLevel = Math.floor(newXp / 100) + 1;
+
+    const updated: StudentProfile = {
+      ...profile,
+      masteredWordIds: updatedMastered,
+      xp: newXp,
+      level: newLevel,
+    };
+
+    updateProfileAndSync(updated);
   };
 
-  const handleSaveProfile = (updated: Partial<StudentProfile>) => {
+  const handleSaveProfile = (updatedFields: Partial<StudentProfile>) => {
     if (!profile) return;
-    setAccounts((prev) => {
-      const current = prev[profile.username];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [profile.username]: {
-          ...current,
-          ...updated,
-        },
-      };
-    });
+    const updated: StudentProfile = {
+      ...profile,
+      ...updatedFields,
+    };
+    updateProfileAndSync(updated);
   };
 
   const handleUpdateHighScore = (score: number) => {
     if (!profile) return;
-    setAccounts((prev) => {
-      const current = prev[profile.username];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [profile.username]: {
-          ...current,
-          quizHighScore: Math.max(current.quizHighScore || 0, score),
-        },
-      };
-    });
+    const updated: StudentProfile = {
+      ...profile,
+      quizHighScore: Math.max(profile.quizHighScore || 0, score),
+    };
+    updateProfileAndSync(updated);
   };
 
-  // IF NO ACTIVE ACCOUNT, SHOW AUTH SCREEN IMMEDIATELY
+  // IF NO ACTIVE ACCOUNT, SHOW AUTH SCREEN
   if (!profile) {
     return (
       <AuthScreen
@@ -235,6 +339,7 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenCertificate={() => setIsCertificateOpen(true)}
         onLogout={handleLogout}
+        cloudStatus={syncStatus}
       />
 
       {/* Floating XP Toast Notification */}

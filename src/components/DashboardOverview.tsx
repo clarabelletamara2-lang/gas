@@ -7,7 +7,9 @@ import {
   ArrowRight, 
   HeartHandshake, 
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Cloud,
+  CheckCircle2
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 import { VOCABULARY_LIST, AUTHORS_INFO } from '../data/suroboyoData';
@@ -99,6 +101,24 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <span>{profile.xp} XP</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Auto-Save & Cloud Status Callout */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-blue-100 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-3 w-3 relative shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <p className="text-xs text-slate-600 leading-snug">
+            <strong className="text-blue-900 font-extrabold">Auto-Save Aktif:</strong> Setiap kamu bermain game, menjawab kuis, atau menandai kamus, semua progres dan XP langsung otomatis tersimpan ke Cloud Firestore (<span className="font-mono text-blue-700 font-bold">@{profile.username}</span>).
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold">
+          <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Otomatis Tersimpan</span>
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
         </div>
       </div>
 
